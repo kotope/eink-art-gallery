@@ -28,71 +28,70 @@ class MetadataDatabase:
     def _init_db(self):
         """Initialize database schema if it doesn't exist"""
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            # Create images metadata table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS images (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    filename TEXT UNIQUE NOT NULL,
-                    title TEXT DEFAULT '',
-                    description TEXT DEFAULT '',
-                    uploaded_at TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+                # Create images metadata table
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS images (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        filename TEXT UNIQUE NOT NULL,
+                        title TEXT DEFAULT '',
+                        description TEXT DEFAULT '',
+                        uploaded_at TEXT NOT NULL,
+                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
 
-            # Create tags table
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS tags (
-                    tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT UNIQUE NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-            ''')
+                # Create tags table
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS tags (
+                        tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE NOT NULL,
+                        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
 
-            # Create image_tags association table (many-to-many)
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS image_tags (
-                    image_filename TEXT NOT NULL,
-                    tag_id INTEGER NOT NULL,
-                    added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (image_filename, tag_id),
-                    FOREIGN KEY (image_filename) REFERENCES images(filename) ON DELETE CASCADE,
-                    FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
-                )
-            ''')
+                # Create image_tags association table (many-to-many)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS image_tags (
+                        image_filename TEXT NOT NULL,
+                        tag_id INTEGER NOT NULL,
+                        added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (image_filename, tag_id),
+                        FOREIGN KEY (image_filename) REFERENCES images(filename) ON DELETE CASCADE,
+                        FOREIGN KEY (tag_id) REFERENCES tags(tag_id) ON DELETE CASCADE
+                    )
+                ''')
 
-            # Create indices for faster queries
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_images_id ON images(id)
-            ''')
+                # Create indices for faster queries
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_images_id ON images(id)
+                ''')
 
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_images_filename ON images(filename)
-            ''')
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_images_filename ON images(filename)
+                ''')
 
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_images_uploaded_at ON images(uploaded_at)
-            ''')
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_images_uploaded_at ON images(uploaded_at)
+                ''')
 
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name)
-            ''')
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name)
+                ''')
 
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_image_tags_filename ON image_tags(image_filename)
-            ''')
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_image_tags_filename ON image_tags(image_filename)
+                ''')
 
-            cursor.execute('''
-                CREATE INDEX IF NOT EXISTS idx_image_tags_tag_id ON image_tags(tag_id)
-            ''')
+                cursor.execute('''
+                    CREATE INDEX IF NOT EXISTS idx_image_tags_tag_id ON image_tags(tag_id)
+                ''')
 
-            conn.commit()
-            conn.close()
-            logger.info(f"Metadata database initialized at {self.db_path}")
+                conn.commit()
+                logger.info(f"Metadata database initialized at {self.db_path}")
         except Exception as e:
             logger.error(f"Failed to initialize metadata database: {e}")
             raise
@@ -110,16 +109,15 @@ class MetadataDatabase:
             True if successful, False otherwise
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            cursor.execute('''
-                INSERT OR REPLACE INTO images (filename, title, description, uploaded_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (filename, title, description, uploaded_at, datetime.now().isoformat()))
+                cursor.execute('''
+                    INSERT OR REPLACE INTO images (filename, title, description, uploaded_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (filename, title, description, uploaded_at, datetime.now().isoformat()))
 
-            conn.commit()
-            conn.close()
+                conn.commit()
             return True
         except Exception as e:
             logger.error(f"Failed to add image {filename} to metadata: {e}")
@@ -135,14 +133,13 @@ class MetadataDatabase:
             True if successful, False otherwise
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            # Delete image and associated tags (cascading)
-            cursor.execute('DELETE FROM images WHERE filename = ?', (filename,))
+                # Delete image and associated tags (cascading)
+                cursor.execute('DELETE FROM images WHERE filename = ?', (filename,))
 
-            conn.commit()
-            conn.close()
+                conn.commit()
             return True
         except Exception as e:
             logger.error(f"Failed to remove image {filename} from metadata: {e}")
@@ -158,41 +155,40 @@ class MetadataDatabase:
             Dictionary with image metadata including tags, or None if not found
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            # Get image metadata
-            cursor.execute('''
-                SELECT filename, title, description, uploaded_at, created_at, updated_at
-                FROM images
-                WHERE filename = ?
-            ''', (filename,))
+                # Get image metadata
+                cursor.execute('''
+                    SELECT filename, title, description, uploaded_at, created_at, updated_at
+                    FROM images
+                    WHERE filename = ?
+                ''', (filename,))
 
-            row = cursor.fetchone()
-            if not row:
-                return None
+                row = cursor.fetchone()
+                if not row:
+                    return None
 
-            # Get tags for this image
-            cursor.execute('''
-                SELECT t.tag_id, t.name
-                FROM tags t
-                JOIN image_tags it ON t.tag_id = it.tag_id
-                WHERE it.image_filename = ?
-                ORDER BY t.name
-            ''', (filename,))
+                # Get tags for this image
+                cursor.execute('''
+                    SELECT t.tag_id, t.name
+                    FROM tags t
+                    JOIN image_tags it ON t.tag_id = it.tag_id
+                    WHERE it.image_filename = ?
+                    ORDER BY t.name
+                ''', (filename,))
 
-            tags = [{"tag_id": tag[0], "name": tag[1]} for tag in cursor.fetchall()]
+                tags = [{"tag_id": tag[0], "name": tag[1]} for tag in cursor.fetchall()]
 
-            conn.close()
-            return {
-                "filename": row[0],
-                "title": row[1],
-                "description": row[2],
-                "uploaded_at": row[3],
-                "created_at": row[4],
-                "updated_at": row[5],
-                "tags": tags
-            }
+                return {
+                    "filename": row[0],
+                    "title": row[1],
+                    "description": row[2],
+                    "uploaded_at": row[3],
+                    "created_at": row[4],
+                    "updated_at": row[5],
+                    "tags": tags
+                }
         except Exception as e:
             logger.error(f"Failed to get metadata for {filename}: {e}")
             return None
@@ -209,28 +205,27 @@ class MetadataDatabase:
             True if successful, False otherwise
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            # Build update query dynamically
-            updates = ["updated_at = ?"]
-            params = [datetime.now().isoformat()]
+                # Build update query dynamically
+                updates = ["updated_at = ?"]
+                params = [datetime.now().isoformat()]
 
-            if title is not None:
-                updates.append("title = ?")
-                params.append(title)
+                if title is not None:
+                    updates.append("title = ?")
+                    params.append(title)
 
-            if description is not None:
-                updates.append("description = ?")
-                params.append(description)
+                if description is not None:
+                    updates.append("description = ?")
+                    params.append(description)
 
-            params.append(filename)
+                params.append(filename)
 
-            query = f"UPDATE images SET {', '.join(updates)} WHERE filename = ?"
-            cursor.execute(query, params)
+                query = f"UPDATE images SET {', '.join(updates)} WHERE filename = ?"
+                cursor.execute(query, params)
 
-            conn.commit()
-            conn.close()
+                conn.commit()
             return True
         except Exception as e:
             logger.error(f"Failed to update metadata for {filename}: {e}")
@@ -247,24 +242,23 @@ class MetadataDatabase:
             True if successful, False otherwise
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            # Insert or get tag
-            cursor.execute('INSERT OR IGNORE INTO tags (name) VALUES (?)', (tag_name,))
+                # Insert or get tag
+                cursor.execute('INSERT OR IGNORE INTO tags (name) VALUES (?)', (tag_name,))
 
-            # Get tag_id
-            cursor.execute('SELECT tag_id FROM tags WHERE name = ?', (tag_name,))
-            tag_id = cursor.fetchone()[0]
+                # Get tag_id
+                cursor.execute('SELECT tag_id FROM tags WHERE name = ?', (tag_name,))
+                tag_id = cursor.fetchone()[0]
 
-            # Add association
-            cursor.execute(
-                'INSERT OR IGNORE INTO image_tags (image_filename, tag_id) VALUES (?, ?)',
-                (filename, tag_id)
-            )
+                # Add association
+                cursor.execute(
+                    'INSERT OR IGNORE INTO image_tags (image_filename, tag_id) VALUES (?, ?)',
+                    (filename, tag_id)
+                )
 
-            conn.commit()
-            conn.close()
+                conn.commit()
             return True
         except Exception as e:
             logger.error(f"Failed to add tag '{tag_name}' to {filename}: {e}")
@@ -281,23 +275,22 @@ class MetadataDatabase:
             True if successful, False otherwise
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            # Get tag_id
-            cursor.execute('SELECT tag_id FROM tags WHERE name = ?', (tag_name,))
-            result = cursor.fetchone()
+                # Get tag_id
+                cursor.execute('SELECT tag_id FROM tags WHERE name = ?', (tag_name,))
+                result = cursor.fetchone()
 
-            if not result:
-                return False
+                if not result:
+                    return False
 
-            tag_id = result[0]
+                tag_id = result[0]
 
-            # Remove association
-            cursor.execute('DELETE FROM image_tags WHERE image_filename = ? AND tag_id = ?', (filename, tag_id))
+                # Remove association
+                cursor.execute('DELETE FROM image_tags WHERE image_filename = ? AND tag_id = ?', (filename, tag_id))
 
-            conn.commit()
-            conn.close()
+                conn.commit()
             return True
         except Exception as e:
             logger.error(f"Failed to remove tag '{tag_name}' from {filename}: {e}")
@@ -313,23 +306,22 @@ class MetadataDatabase:
             True if successful, False otherwise
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            # Get tag_id
-            cursor.execute('SELECT tag_id FROM tags WHERE name = ?', (tag_name,))
-            result = cursor.fetchone()
+                # Get tag_id
+                cursor.execute('SELECT tag_id FROM tags WHERE name = ?', (tag_name,))
+                result = cursor.fetchone()
 
-            if not result:
-                return False
+                if not result:
+                    return False
 
-            tag_id = result[0]
+                tag_id = result[0]
 
-            # Remove associations for this tag from all images
-            cursor.execute('DELETE FROM image_tags WHERE tag_id = ?', (tag_id,))
+                # Remove associations for this tag from all images
+                cursor.execute('DELETE FROM image_tags WHERE tag_id = ?', (tag_id,))
 
-            conn.commit()
-            conn.close()
+                conn.commit()
             return True
         except Exception as e:
             logger.error(f"Failed to remove tag '{tag_name}' from all images: {e}")
@@ -342,20 +334,19 @@ class MetadataDatabase:
             List of tag dictionaries with id and name
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            cursor.execute('''
-                SELECT t.tag_id, t.name, COUNT(it.image_filename) as usage_count
-                FROM tags t
-                LEFT JOIN image_tags it ON t.tag_id = it.tag_id
-                GROUP BY t.tag_id, t.name
-                ORDER BY t.name
-            ''')
+                cursor.execute('''
+                    SELECT t.tag_id, t.name, COUNT(it.image_filename) as usage_count
+                    FROM tags t
+                    LEFT JOIN image_tags it ON t.tag_id = it.tag_id
+                    GROUP BY t.tag_id, t.name
+                    ORDER BY t.name
+                ''')
 
-            result = [{"tag_id": row[0], "name": row[1], "usage_count": row[2]} for row in cursor.fetchall()]
-            conn.close()
-            return result
+                result = [{"tag_id": row[0], "name": row[1], "usage_count": row[2]} for row in cursor.fetchall()]
+                return result
         except Exception as e:
             logger.error(f"Failed to get all tags: {e}")
             return []
@@ -370,20 +361,19 @@ class MetadataDatabase:
             List of filenames that have this tag
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            cursor.execute('''
-                SELECT DISTINCT it.image_filename
-                FROM image_tags it
-                JOIN tags t ON it.tag_id = t.tag_id
-                WHERE t.name = ?
-                ORDER BY it.image_filename
-            ''', (tag_name,))
+                cursor.execute('''
+                    SELECT DISTINCT it.image_filename
+                    FROM image_tags it
+                    JOIN tags t ON it.tag_id = t.tag_id
+                    WHERE t.name = ?
+                    ORDER BY it.image_filename
+                ''', (tag_name,))
 
-            result = [row[0] for row in cursor.fetchall()]
-            conn.close()
-            return result
+                result = [row[0] for row in cursor.fetchall()]
+                return result
         except Exception as e:
             logger.error(f"Failed to get images by tag '{tag_name}': {e}")
             return []
@@ -398,23 +388,22 @@ class MetadataDatabase:
             List of matching filenames
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            search_pattern = f"%{query}%"
+                search_pattern = f"%{query}%"
 
-            cursor.execute('''
-                SELECT DISTINCT i.filename
-                FROM images i
-                LEFT JOIN image_tags it ON i.filename = it.image_filename
-                LEFT JOIN tags t ON it.tag_id = t.tag_id
-                WHERE i.title LIKE ? OR i.description LIKE ? OR t.name LIKE ?
-                ORDER BY i.filename
-            ''', (search_pattern, search_pattern, search_pattern))
+                cursor.execute('''
+                    SELECT DISTINCT i.filename
+                    FROM images i
+                    LEFT JOIN image_tags it ON i.filename = it.image_filename
+                    LEFT JOIN tags t ON it.tag_id = t.tag_id
+                    WHERE i.title LIKE ? OR i.description LIKE ? OR t.name LIKE ?
+                    ORDER BY i.filename
+                ''', (search_pattern, search_pattern, search_pattern))
 
-            result = [row[0] for row in cursor.fetchall()]
-            conn.close()
-            return result
+                result = [row[0] for row in cursor.fetchall()]
+                return result
         except Exception as e:
             logger.error(f"Failed to search images with query '{query}': {e}")
             return []
@@ -426,40 +415,39 @@ class MetadataDatabase:
             List of image metadata dictionaries
         """
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            with sqlite3.connect(str(self.db_path)) as conn:
+                cursor = conn.cursor()
 
-            cursor.execute('''
-                SELECT filename, title, description, uploaded_at, created_at, updated_at
-                FROM images
-                ORDER BY filename
-            ''')
-
-            images = []
-            for row in cursor.fetchall():
-                # Get tags for each image
                 cursor.execute('''
-                    SELECT t.tag_id, t.name
-                    FROM tags t
-                    JOIN image_tags it ON t.tag_id = it.tag_id
-                    WHERE it.image_filename = ?
-                    ORDER BY t.name
-                ''', (row[0],))
+                    SELECT filename, title, description, uploaded_at, created_at, updated_at
+                    FROM images
+                    ORDER BY filename
+                ''')
 
-                tags = [{"tag_id": tag[0], "name": tag[1]} for tag in cursor.fetchall()]
+                images = []
+                for row in cursor.fetchall():
+                    # Get tags for each image
+                    cursor.execute('''
+                        SELECT t.tag_id, t.name
+                        FROM tags t
+                        JOIN image_tags it ON t.tag_id = it.tag_id
+                        WHERE it.image_filename = ?
+                        ORDER BY t.name
+                    ''', (row[0],))
 
-                images.append({
-                    "filename": row[0],
-                    "title": row[1],
-                    "description": row[2],
-                    "uploaded_at": row[3],
-                    "created_at": row[4],
-                    "updated_at": row[5],
-                    "tags": tags
-                })
+                    tags = [{"tag_id": tag[0], "name": tag[1]} for tag in cursor.fetchall()]
 
-            conn.close()
-            return images
+                    images.append({
+                        "filename": row[0],
+                        "title": row[1],
+                        "description": row[2],
+                        "uploaded_at": row[3],
+                        "created_at": row[4],
+                        "updated_at": row[5],
+                        "tags": tags
+                    })
+
+                return images
         except Exception as e:
             logger.error(f"Failed to get all images metadata: {e}")
             return []
