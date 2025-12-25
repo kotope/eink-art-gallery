@@ -12,4 +12,4 @@ echo "Starting E-Ink Gallery Service on port $PORT"
 export PORT
 
 # Run the Python application
-cd /app/app && python3 /app/app/app.py
+cd /app && python3 /app/app.py
